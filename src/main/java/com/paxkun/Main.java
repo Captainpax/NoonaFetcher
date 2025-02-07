@@ -1,15 +1,22 @@
 package com.paxkun;
 
+import io.javalin.Javalin;
+import io.javalin.config.JavalinConfig;
+import lombok.Getter;
+import lombok.Setter;
+
+/**
+ * Main class to initialize and run the web downloader application.
+ */
 public class Main {
 
+    @Getter @Setter
+    private static Server server;
+
     public static void main(String[] args) {
-        // Start logging (if needed)
-        StatusAPI.startLogging();
-
-        // Start WebAPI (serving frontend)
-        WebAPI.startWebServer();
-
-        // Start StatusAPI (handling status routes)
-        StatusAPI.startStatusServer();
+        // Initialize and start the server
+        server = new Server();
+        server.initializeEndpoints();
+        server.start();
     }
 }

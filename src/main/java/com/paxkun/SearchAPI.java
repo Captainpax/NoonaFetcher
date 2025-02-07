@@ -1,86 +1,53 @@
 package com.paxkun;
 
-import io.javalin.Javalin;
-import io.javalin.websocket.WsContext;
-import java.util.concurrent.atomic.AtomicBoolean;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
-public class StatusAPI {
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
-    // WebSocket context for sending logs to the frontend
-    public static WsContext progressWsContext = null;
+/**
+ * Handles searching URLs for downloadable files of a specified type.
+ */
+public class SearchAPI {
 
-    // Atomic flag to track if a download is running or not
-    private static final AtomicBoolean isDownloading = new AtomicBoolean(false);
-
-    /**
-     * Method to start logging and set up WebSocket for live updates.
-     */
-    public static void startLogging() {
-        // For now, just a simple log to indicate logging has started.
-        System.out.println("Logging started...");
-    }
+    private static final Set<String> downloadList = new HashSet<>();
 
     /**
-     * Method to log messages.
-     * This will log messages to the console and can send messages to the frontend through WebSocket.
+     * Searches for files of the specified type at the given URL.
      *
-     * @param message The message to be logged.
+     * @param url      The target website URL.
+     * @param fileType The type of files to search for (e.g., ".pdf").
+     * @return A set containing the found file links.
      */
-    public static void updateLog(String message) {
-        // Log the message to the console
-        System.out.println(message);
+    public static Set<String> searchFiles(String url, String fileType) {
+        downloadList.clear(); // Clear previous results
+        try {
+            StatusAPI.updateLog("🔍 Searching for files in: " + url);
 
-        // Optionally send this log message to the frontend via WebSocket if connected
-        if (progressWsContext != null) {
-            progressWsContext.send("{\"logMessage\":\"" + message + "\"}");
+            // Connect to the URL and parse its HTML
+            Document doc = Jsoup.connect(url).get();
+            Elements links = doc.select("a[href$=" + fileType + "]");
+
+            // Extract and store valid file links
+            for (Element link : links) {
+                String href = link.absUrl("href");
+                if (!href.isEmpty() && downloadList.add(href)) {
+                    StatusAPI.updateLog("📄 Found: " + href);
+                }
+            }
+
+            if (downloadList.isEmpty()) {
+                StatusAPI.updateLog("⚠️ No matching files found.");
+            } else {
+                StatusAPI.updateLog("✅ Search complete. " + downloadList.size() + " files found.");
+            }
+        } catch (IOException e) {
+            StatusAPI.updateLog("❌ Error during search: " + e.getMessage());
         }
-    }
-
-    /**
-     * Start the status server to handle API routes related to downloading and status tracking.
-     */
-    public static void startStatusServer() {
-        Javalin app = Javalin.create(config -> {
-            // Set up WebSocket for log streaming
-            config.wsFactory(config -> {
-                config.onConnect(ctx -> progressWsContext = ctx);
-                config.onClose(ctx -> progressWsContext = null);
-            });
-        }).start(7000);  // Start the server on port 7000
-
-        // Route to check status
-        app.get("/api/status", ctx -> {
-            if (isDownloading.get()) {
-                ctx.result("Download in progress...");
-            } else {
-                ctx.result("No download in progress.");
-            }
-        });
-
-        // Route to start the download process
-        app.post("/api/startDownload", ctx -> {
-            if (isDownloading.get()) {
-                ctx.result("A download is already in progress.");
-            } else {
-                isDownloading.set(true);
-                // Start the download logic (you can tie this to the logic of your download)
-                ctx.result("Download started.");
-                // Call download-related methods here (e.g., call a method to search files or start downloads)
-            }
-        });
-
-        // Route to cancel the download process
-        app.post("/api/cancelDownload", ctx -> {
-            if (isDownloading.get()) {
-                isDownloading.set(false);
-                // Add cancellation logic here
-                updateLog("Download canceled.");
-                ctx.result("Download canceled.");
-            } else {
-                ctx.result("No download to cancel.");
-            }
-        });
-
-        // Add more routes as necessary for other API calls related to status, download, etc.
+        return new HashSet<>(downloadList);
     }
 }

@@ -1,35 +1,67 @@
 package com.paxkun;
 
+import lombok.extern.slf4j.Slf4j;
 import java.io.*;
 import java.nio.file.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+/**
+ * Handles zipping of downloaded files into a single archive for user download.
+ */
+@Slf4j
 public class ZipperAPI {
 
-    // Method to zip all files in the specified directory
+    private static final File zipFile = new File("downloads.zip");
+
+    /**
+     * Zips all files inside the given directory.
+     *
+     * @param downloadDir The directory containing files to be zipped.
+     */
     public static void zipAllFiles(Path downloadDir) {
-        File zipFile = new File("downloads.zip");
+        log.info("📦 Starting zipping process...");
+        StatusAPI.broadcastLog("📦 Zipping files...");
 
         try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zipFile))) {
-            // Walk through the directory and zip all files
             Files.walk(downloadDir)
-                    .filter(Files::isRegularFile) // Only zip regular files
+                    .filter(Files::isRegularFile)
                     .forEach(path -> {
                         try {
-                            // Create a zip entry for each file
                             zos.putNextEntry(new ZipEntry(downloadDir.relativize(path).toString()));
-                            // Copy the file into the zip entry
                             Files.copy(path, zos);
                             zos.closeEntry();
                         } catch (IOException e) {
-                            System.err.println("Error zipping file: " + path);
+                            log.error("❌ Error zipping file: {}", path, e);
+                            StatusAPI.broadcastLog("❌ Error zipping file: " + path);
                         }
                     });
 
-            System.out.println("Zipping complete. Zip file created: " + zipFile.getAbsolutePath());
+            log.info("✅ Zipping complete! Ready for download.");
+            StatusAPI.broadcastLog("✅ Zipping complete! You can now download the ZIP.");
+            StatusAPI.notifyZipComplete();
         } catch (IOException e) {
-            System.err.println("Error creating zip file: " + e.getMessage());
+            log.error("❌ Zipping error", e);
+            StatusAPI.broadcastLog("❌ Zipping error: " + e.getMessage());
         }
+    }
+
+    /**
+     * Provides access to the generated ZIP file.
+     *
+     * @return File object representing the ZIP file.
+     */
+    public static File getZipFile() {
+        return zipFile;
+    }
+
+    /**
+     * Provides an InputStream for the generated ZIP file.
+     *
+     * @return FileInputStream of the ZIP file.
+     * @throws FileNotFoundException if the ZIP file is not found.
+     */
+    public static FileInputStream getZipFileInputStream() throws FileNotFoundException {
+        return new FileInputStream(zipFile);
     }
 }

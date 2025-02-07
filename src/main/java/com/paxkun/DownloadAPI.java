@@ -3,98 +3,95 @@ package com.paxkun;
 import java.io.*;
 import java.net.URL;
 import java.nio.file.*;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+/**
+ * Handles downloading files found by the SearchAPI.
+ */
 public class DownloadAPI {
 
-    private static Set<String> fileLinks = new HashSet<>();
-    private static Path downloadDir;
+    private static final ExecutorService downloadExecutor = Executors.newFixedThreadPool(3); // Limit downloads to 3 concurrent threads
+    private static Path rootDownloadDirectory;
     private static int totalFiles = 0;
     private static int filesDownloaded = 0;
 
-    // Method to start the download process
-    public static void startDownload(String url, String fileType) {
+    /**
+     * Initiates the download process for the provided file links.
+     *
+     * @param fileLinks The list of files to download.
+     * @param baseUrl   The base URL for directory structuring.
+     */
+    public static void startDownload(Set<String> fileLinks, String baseUrl) {
+        if (fileLinks.isEmpty()) {
+            StatusAPI.updateLog("⚠️ No files to download.");
+            return;
+        }
+
         try {
-            // Clear previous download data
-            fileLinks.clear();
+            rootDownloadDirectory = createDownloadDirectory(baseUrl);
+            totalFiles = fileLinks.size();
             filesDownloaded = 0;
 
-            // Create a new directory for this download
-            downloadDir = createDownloadDirectory(url);
+            StatusAPI.updateLog("⬇️ Starting downloads for " + totalFiles + " files...");
 
-            // Search for files to download
-            searchFiles(url, fileType);
-
-            // If no files were found, return
-            if (fileLinks.isEmpty()) {
-                System.out.println("No files found for the given URL and file type.");
-                return;
-            }
-
-            // Download the files
-            downloadFiles();
-
-        } catch (Exception e) {
-            System.err.println("Error starting download: " + e.getMessage());
-        }
-    }
-
-    // Method to search for files of the given file type on the URL
-    private static void searchFiles(String url, String fileType) {
-        try {
-            // Simulate fetching the links (this should be replaced with actual JSoup or other logic to get the file links)
-            System.out.println("Searching for files in: " + url);
-
-            // Simulating found links (replace this with actual file-finding logic)
-            fileLinks.add(url + "/file1" + fileType);
-            fileLinks.add(url + "/file2" + fileType);
-            fileLinks.add(url + "/file3" + fileType);
-
-            totalFiles = fileLinks.size();
-            System.out.println("Found " + totalFiles + " files to download.");
-
-        } catch (Exception e) {
-            System.err.println("Error searching for files: " + e.getMessage());
-        }
-    }
-
-    // Method to download the files
-    private static void downloadFiles() {
-        try {
+            // Execute downloads concurrently
             for (String fileLink : fileLinks) {
-                String fileName = new File(fileLink).getName();
-                Path filePath = downloadDir.resolve(fileName);
-
-                System.out.println("Downloading: " + fileName);
-                downloadFile(fileLink, filePath);
-
-                filesDownloaded++;
-                int progress = (filesDownloaded * 100) / totalFiles;
-                System.out.println("Progress: " + progress + "%");
-
-                System.out.println("Downloaded: " + fileName);
+                downloadExecutor.submit(() -> downloadFile(fileLink));
             }
 
-            System.out.println("All files downloaded. Zipping...");
-
-            // Start zipping process once all files are downloaded
-            ZipperAPI.zipAllFiles(downloadDir);
-
-        } catch (Exception e) {
-            System.err.println("Error downloading files: " + e.getMessage());
+        } catch (IOException e) {
+            StatusAPI.updateLog("❌ Download initialization error: " + e.getMessage());
         }
     }
 
-    // Method to download a single file
-    private static void downloadFile(String fileLink, Path filePath) throws IOException {
-        URL url = new URL(fileLink);
-        try (InputStream in = url.openStream(); OutputStream out = Files.newOutputStream(filePath)) {
-            in.transferTo(out);
+    /**
+     * Downloads a single file from the given URL.
+     *
+     * @param fileUrl The file URL to download.
+     */
+    private static void downloadFile(String fileUrl) {
+        if (CancelAPI.isCancelRequested()) {
+            StatusAPI.updateLog("⛔ Download canceled.");
+            return;
+        }
+
+        try {
+            URL url = new URL(fileUrl);
+            String fileName = new File(url.getPath()).getName();
+            Path filePath = rootDownloadDirectory.resolve(fileName);
+
+            StatusAPI.updateLog("⬇️ Downloading: " + fileName);
+
+            try (InputStream is = url.openStream();
+                 OutputStream os = Files.newOutputStream(filePath)) {
+                is.transferTo(os);
+            }
+
+            filesDownloaded++;
+            int progress = (filesDownloaded * 100) / totalFiles;
+            StatusAPI.updateProgress(progress);
+            StatusAPI.updateLog("✅ Downloaded: " + fileName);
+
+            // Check if all downloads are complete
+            if (filesDownloaded == totalFiles) {
+                StatusAPI.updateLog("📦 All downloads completed. Preparing ZIP file...");
+                ZipperAPI.zipAllFiles(rootDownloadDirectory);
+            }
+
+        } catch (IOException e) {
+            StatusAPI.updateLog("❌ Download error: " + e.getMessage());
         }
     }
 
-    // Method to create a download directory based on the URL
+    /**
+     * Creates a directory for storing downloaded files based on the base URL.
+     *
+     * @param url The base URL to generate a directory name.
+     * @return The created directory path.
+     * @throws IOException If directory creation fails.
+     */
     private static Path createDownloadDirectory(String url) throws IOException {
         Path path = Paths.get("downloads", url.replaceAll("[^a-zA-Z0-9]", "_"));
         Files.createDirectories(path);

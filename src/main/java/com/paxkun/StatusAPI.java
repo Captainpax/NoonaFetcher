@@ -1,39 +1,62 @@
 package com.paxkun;
 
 import io.javalin.Javalin;
+import io.javalin.websocket.WsContext;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * StatusAPI handles logging, WebSocket-based live status updates, and API routes for status tracking.
+ */
+@Slf4j
 public class StatusAPI {
+    private final Javalin app;
+    private static final Set<WsContext> activeConnections = ConcurrentHashMap.newKeySet();
 
-    /**
-     * Start the logging process (customizable, can be expanded).
-     */
-    public static void startLogging() {
-        // Placeholder for initializing logging (you can expand this to use a logger like SLF4J or log4j)
-        System.out.println("Logging started...");
-        // You can implement your logging mechanism here
+    @Getter
+    private static StatusAPI instance;
+
+    public StatusAPI(Server server) {
+        this.app = server.getApp();
+        instance = this;
+        initializeRoutes();
+    }
+
+    private void initializeRoutes() {
+        // WebSocket for live logs
+        app.ws("/api/status", ws -> {
+            ws.onConnect(ctx -> {
+                activeConnections.add(ctx);
+                log.info("Client connected to status WebSocket.");
+            });
+            ws.onClose(ctx -> {
+                activeConnections.remove(ctx);
+                log.info("Client disconnected from status WebSocket.");
+            });
+        });
+
+        // Route to check server health
+        app.get("/api/health", ctx -> ctx.result("Server is running."));
+
+        // Route to check if a download is in progress
+        app.get("/api/progress", ctx -> {
+            boolean inProgress = DownloadAPI.isDownloading();
+            ctx.json("{\"downloading\": " + inProgress + "}");
+        });
+
+        log.info("StatusAPI initialized.");
     }
 
     /**
-     * Start the status server to handle API routes related to downloading and status tracking.
+     * Broadcast a log message to all connected WebSocket clients.
+     *
+     * @param message The log message.
      */
-    public static void startStatusServer() {
-        // Start the API server on port 7000 (same port for both WebAPI and StatusAPI)
-        Javalin app = Javalin.create(config -> {
-            // Optionally add more configuration here
-        }).start(7000);
-
-        // Example route for fetching status updates (useful for progress, etc.)
-        app.get("/api/status", ctx -> {
-            // Return a mock status for now, could be dynamic based on your progress tracking
-            ctx.result("Status: Download in progress...");
-        });
-
-        // Example route for starting the download (extend based on your logic)
-        app.post("/api/startDownload", ctx -> {
-            // Add logic to start the download process
-            ctx.result("Download started");
-        });
-
-        // You can add more routes as needed (e.g., for cancelling, logs, etc.)
+    public static void broadcastLog(String message) {
+        log.info(message);
+        activeConnections.forEach(ctx -> ctx.send("{\"logMessage\": \"" + message + "\"}"));
     }
 }

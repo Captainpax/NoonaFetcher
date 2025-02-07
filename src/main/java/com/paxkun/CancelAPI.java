@@ -1,26 +1,44 @@
 package com.paxkun;
 
-public class CancelAPI {
+import io.javalin.Javalin;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
+/**
+ * CancelAPI handles cancellation logic for stopping downloads.
+ */
+@Slf4j
+public class CancelAPI {
+    private final Javalin app;
+    @Getter
+    private static CancelAPI instance;
     private static boolean cancelRequested = false;
 
-    // Method to cancel the download process
-    public static void cancelDownload() {
-        try {
-            cancelRequested = true;
-            System.out.println("Download process has been canceled.");
-            // Logic to stop download thread can be added here if needed.
-        } catch (Exception e) {
-            System.err.println("Error canceling the download: " + e.getMessage());
-        }
+    public CancelAPI(Server server) {
+        this.app = server.getApp();
+        instance = this;
+        initializeRoutes();
     }
 
-    // Method to check if cancellation was requested
+    private void initializeRoutes() {
+        app.post("/api/cancel", ctx -> {
+            if (cancelRequested) {
+                ctx.result("Cancellation already requested.");
+                return;
+            }
+            cancelRequested = true;
+            StatusAPI.broadcastLog("⛔ Download process canceled.");
+            ctx.result("Download process has been canceled.");
+            log.info("Download cancellation requested.");
+        });
+
+        log.info("CancelAPI initialized.");
+    }
+
     public static boolean isCancelRequested() {
         return cancelRequested;
     }
 
-    // Reset the cancellation request flag
     public static void resetCancelRequest() {
         cancelRequested = false;
     }
