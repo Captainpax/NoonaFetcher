@@ -2,60 +2,64 @@ package com.paxkun;
 
 import io.javalin.Javalin;
 import io.javalin.http.staticfiles.Location;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
+import io.javalin.http.staticfiles.StaticFileConfig;
 
 /**
- * WebAPI handles frontend serving, REST API routes, and file downloads.
+ * WebAPI handles the frontend and REST API requests.
+ * It serves the web GUI and manages API routes under /api/.
  */
-@Slf4j
 public class WebAPI {
-    private final Javalin app;
 
-    @Getter
-    private static WebAPI instance;
+    private static Javalin app;
 
-    public WebAPI(Server server) {
-        this.app = server.getApp();
-        instance = this;
-        initializeRoutes();
-    }
+    /**
+     * Initializes and starts the web server.
+     * Serves the web GUI and API routes under /api/.
+     */
+    public static void startWebServer() {
+        app = Javalin.create(config -> {
+            // ✅ Set up static file serving
+            config.staticFiles.add(staticFileConfig -> {
+                staticFileConfig.hostedPath = "/";
+                staticFileConfig.directory = "public";
+                staticFileConfig.location = Location.CLASSPATH;
+            });
+        }).start(7000);
 
-    private void initializeRoutes() {
-        // Serve static files for the frontend
-        app.config.staticFiles.add("/public", Location.CLASSPATH);
+        // ✅ Serve the main frontend page
+        app.get("/", ctx -> ctx.render("public/index.html"));
 
-        // Home route (serves index.html)
-        app.get("/", ctx -> ctx.render("/public/index.html"));
+        // ✅ API routes (all under /api/)
+        app.get("/api/health", ctx -> ctx.result("✅ WebAPI is running!"));
 
-        // Route to start a download process
-        app.post("/api/start", ctx -> {
+        // Route to trigger downloading files
+        app.post("/api/startDownload", ctx -> {
             String url = ctx.formParam("url");
             String fileType = ctx.formParam("fileType");
-
             if (url == null || url.isEmpty() || fileType == null || fileType.isEmpty()) {
-                ctx.status(400).result("Invalid URL or File Type");
+                ctx.status(400).result("❌ Invalid parameters.");
                 return;
             }
-
-            StatusAPI.broadcastLog("🚀 Starting download for: " + url);
-            DownloadAPI.startDownload(url, fileType);
-            ctx.result("Download started...");
+            SearchAPI.startSearch(url, fileType);
+            ctx.result("🔍 Searching and downloading files...");
         });
 
-        // Route to download the zip file
+        // Route to check download status
+        app.get("/api/status", ctx -> ctx.result(StatusAPI.getStatus()));
+
+        // Route to cancel download
+        app.post("/api/cancel", ctx -> {
+            CancelAPI.cancelDownload();
+            ctx.result("⛔ Download canceled.");
+        });
+
+        // Route to serve the ZIP file
         app.get("/api/download", ctx -> {
-            if (!ZipperAPI.getZipFile().exists()) {
-                ctx.status(404).result("❌ ZIP file not found.");
-                return;
-            }
-
-            ctx.header("Content-Disposition", "attachment; filename=\"downloads.zip\"");
+            ctx.header("Content-Disposition", "attachment; filename=downloads.zip");
             ctx.contentType("application/zip");
-            ctx.result(ZipperAPI.getZipFileInputStream());
-            StatusAPI.broadcastLog("📤 Downloading ZIP file...");
+            ctx.result(ZipperAPI.getZipFile());
         });
 
-        log.info("WebAPI initialized.");
+        System.out.println("🚀 Web server started on http://localhost:7000");
     }
 }

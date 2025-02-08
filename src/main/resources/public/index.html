@@ -6,117 +6,83 @@
     <title>Web Downloader</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #2C3E50; /* Dark greenish color */
-            color: #ecf0f1;
+            background-color: black;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
             text-align: center;
-            padding: 20px;
         }
-
         h1 {
-            color: #1ABC9C;
+            text-shadow: 0 0 10px #00ff00;
         }
-
-        .log-container {
+        #log-container {
+            background-color: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00ff00;
             width: 80%;
-            max-width: 800px;
             height: 300px;
-            margin: 20px auto;
-            background-color: #34495E;
-            padding: 10px;
             overflow-y: auto;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        }
-
-        .log-message {
-            color: #ecf0f1;
-            margin: 5px 0;
-            padding: 2px;
-            border-bottom: 1px solid #7f8c8d;
-        }
-
-        .progress-bar-container {
-            margin-top: 20px;
-            width: 80%;
-            max-width: 800px;
-            background-color: #34495E;
             padding: 10px;
-            border-radius: 5px;
+            margin: auto;
+            box-shadow: 0 0 10px #00ff00;
         }
-
-        .progress-bar {
-            width: 0;
-            height: 25px;
-            background-color: #1ABC9C;
-            border-radius: 5px;
-        }
-
-        #downloadButton {
-            margin-top: 30px;
-            padding: 10px 20px;
-            background-color: #1ABC9C;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+        input, button {
+            background-color: black;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 8px;
             font-size: 16px;
         }
-
-        #downloadButton:disabled {
-            background-color: #95a5a6;
+        button:hover {
+            background-color: #00ff00;
+            color: black;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
 <h1>Web Downloader</h1>
-
-<div class="log-container" id="logContainer"></div>
-
-<div class="progress-bar-container">
-    <div class="progress-bar" id="progressBar"></div>
-</div>
-
-<button id="downloadButton" onclick="startDownload()">Start Download</button>
+<input type="text" id="urlInput" placeholder="Enter URL">
+<input type="text" id="fileType" placeholder="File Type (e.g., .pdf)">
+<button onclick="startDownload()">Start Download</button>
+<button onclick="cancelDownload()">Cancel</button>
+<div id="log-container"></div>
+<button id="downloadBtn" style="display: none;" onclick="downloadZip()">Download ZIP</button>
 
 <script>
-    const logContainer = document.getElementById('logContainer');
-    const progressBar = document.getElementById('progressBar');
-    const downloadButton = document.getElementById('downloadButton');
+    let logContainer = document.getElementById("log-container");
+    let downloadBtn = document.getElementById("downloadBtn");
 
-    const socket = new WebSocket("ws://localhost:7000/progress");
-
-    // Handle incoming log messages and progress updates
-    socket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-
-        if (data.logMessage) {
-            const logMessage = document.createElement('div');
-            logMessage.classList.add('log-message');
-            logMessage.innerText = data.logMessage;
-            logContainer.appendChild(logMessage);
-            logContainer.scrollTop = logContainer.scrollHeight;
-        }
-
-        if (data.progress !== undefined) {
-            progressBar.style.width = data.progress + "%";
-        }
-
-        if (data.zipComplete) {
-            downloadButton.disabled = false;
-        }
-    };
-
-    // Start the download process
-    function startDownload() {
-        fetch('/api/startDownload', { method: 'POST' })
-            .then(response => response.json())
-            .then(data => {
-                console.log("Download started: ", data);
-                downloadButton.disabled = true;
-            })
-            .catch(error => console.error('Error:', error));
+    function logMessage(message) {
+        let logEntry = document.createElement("div");
+        logEntry.textContent = message;
+        logContainer.appendChild(logEntry);
+        logContainer.scrollTop = logContainer.scrollHeight; // Auto-scroll
     }
+
+    function startDownload() {
+        let url = document.getElementById("urlInput").value;
+        let fileType = document.getElementById("fileType").value;
+        fetch('/api/startDownload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `url=${encodeURIComponent(url)}&fileType=${encodeURIComponent(fileType)}`
+        }).then(response => response.text()).then(logMessage);
+    }
+
+    function cancelDownload() {
+        fetch('/api/cancelDownload', { method: 'POST' }).then(response => response.text()).then(logMessage);
+    }
+
+    function downloadZip() {
+        window.location.href = "/api/download";
+    }
+
+    // WebSocket to receive log updates
+    let ws = new WebSocket("ws://" + window.location.host + "/api/progress");
+    ws.onmessage = (event) => {
+        let data = JSON.parse(event.data);
+        if (data.logMessage) logMessage(data.logMessage);
+        if (data.zipComplete) downloadBtn.style.display = "block";
+    };
 </script>
 </body>
 </html>

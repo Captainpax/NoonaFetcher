@@ -17,7 +17,7 @@
     </properties>
 
     <dependencies>
-        <!-- Javalin core dependency for backend functionality -->
+        <!-- Javalin for lightweight web server -->
         <dependency>
             <groupId>io.javalin</groupId>
             <artifactId>javalin</artifactId>
@@ -31,21 +31,21 @@
             <version>1.18.3</version>
         </dependency>
 
-        <!-- SLF4J API for logging -->
+        <!-- SLF4J API for structured logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>2.0.16</version>
         </dependency>
 
-        <!-- SLF4J Simple implementation for logging -->
+        <!-- Simple SLF4J Implementation -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
             <version>2.0.16</version>
         </dependency>
 
-        <!-- Jetty dependencies for Javalin's HTTP server -->
+        <!-- Jetty for serving web content -->
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
@@ -64,14 +64,15 @@
             <version>11.0.24</version>
         </dependency>
 
-        <!-- Kotlin Standard Libraries -->
+        <!-- Lombok for reducing boilerplate code -->
         <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-stdlib</artifactId>
-            <version>1.9.25</version>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.30</version>
+            <scope>provided</scope>
         </dependency>
 
-        <!-- Zstandard for compression -->
+        <!-- Zstandard for efficient compression -->
         <dependency>
             <groupId>com.github.luben</groupId>
             <artifactId>zstd-jni</artifactId>
@@ -81,7 +82,7 @@
 
     <build>
         <plugins>
-            <!-- Maven compiler plugin for compiling Java code -->
+            <!-- Compiler plugin for Java 21 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -89,14 +90,21 @@
                 <configuration>
                     <source>21</source>
                     <target>21</target>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>1.18.30</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
 
-            <!-- Maven shade plugin for creating an uber-jar -->
+            <!-- Shade plugin for building a standalone JAR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.3</version>
+                <version>3.3.0</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -106,7 +114,7 @@
                         <configuration>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.paxkun.SiteDownloaderApp</mainClass> <!-- Replace with your main class -->
+                                    <mainClass>com.paxkun.Main</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

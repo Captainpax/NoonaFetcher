@@ -4,50 +4,47 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Handles searching URLs for downloadable files of a specified type.
+ * SearchAPI is responsible for searching a webpage for specific file types
+ * and generating a list of downloadable file URLs.
  */
 public class SearchAPI {
 
     private static final Set<String> downloadList = new HashSet<>();
 
     /**
-     * Searches for files of the specified type at the given URL.
+     * Starts searching for files of the given type at the specified URL.
      *
-     * @param url      The target website URL.
-     * @param fileType The type of files to search for (e.g., ".pdf").
-     * @return A set containing the found file links.
+     * @param url      The URL to search for downloadable files.
+     * @param fileType The file extension to filter by (e.g., ".pdf").
      */
-    public static Set<String> searchFiles(String url, String fileType) {
-        downloadList.clear(); // Clear previous results
+    public static void startSearch(String url, String fileType) {
         try {
-            StatusAPI.updateLog("🔍 Searching for files in: " + url);
-
-            // Connect to the URL and parse its HTML
+            StatusAPI.updateLog("🔍 Searching for " + fileType + " files at: " + url);
             Document doc = Jsoup.connect(url).get();
             Elements links = doc.select("a[href$=" + fileType + "]");
 
-            // Extract and store valid file links
+            downloadList.clear(); // Reset previous results
+
             for (Element link : links) {
-                String href = link.absUrl("href");
-                if (!href.isEmpty() && downloadList.add(href)) {
-                    StatusAPI.updateLog("📄 Found: " + href);
+                String fileUrl = link.absUrl("href");
+                if (downloadList.add(fileUrl)) {
+                    StatusAPI.updateLog("📄 Found: " + fileUrl);
                 }
             }
 
             if (downloadList.isEmpty()) {
                 StatusAPI.updateLog("⚠️ No matching files found.");
             } else {
-                StatusAPI.updateLog("✅ Search complete. " + downloadList.size() + " files found.");
+                StatusAPI.updateLog("✅ Found " + downloadList.size() + " files. Starting download...");
+                DownloadAPI.startDownload(downloadList); // Now correctly passing a Set<String>
             }
-        } catch (IOException e) {
+
+        } catch (Exception e) {
             StatusAPI.updateLog("❌ Error during search: " + e.getMessage());
         }
-        return new HashSet<>(downloadList);
     }
 }
