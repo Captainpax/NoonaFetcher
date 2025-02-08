@@ -9,6 +9,7 @@ public class Main {
 
     public static void main(String[] args) {
         server = new Server(); // Initialize server
-        server.startServer(); // Start Javalin server
+        server.startServer();  // Start Javalin server
+        server.populate();     // Create and populate endpoints
     }
 }

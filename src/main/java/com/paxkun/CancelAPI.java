@@ -1,7 +1,10 @@
 package com.paxkun;
 
+import lombok.Getter;
+
 public class CancelAPI {
 
+    @Getter
     private static boolean cancelRequested = false;
 
     public static void cancelDownload() {
@@ -12,10 +15,6 @@ public class CancelAPI {
         if (Main.getServer() != null) {
             Main.getServer().stopServer();
         }
-    }
-
-    public static boolean isCancelRequested() {
-        return cancelRequested;
     }
 
     public static void resetCancelRequest() {

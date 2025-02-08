@@ -1,7 +1,8 @@
 package com.paxkun;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.*;
-import java.net.URL;
 import java.nio.file.*;
 import java.util.Set;
 
@@ -20,7 +21,7 @@ public class DownloadAPI {
      *
      * @param fileLinks The set of file URLs to download.
      */
-    public static void startDownload(Set<String> fileLinks) {
+    public static void startDownload(@NotNull Set<String> fileLinks) {
         if (fileLinks.isEmpty()) {
             StatusAPI.updateLog("⚠️ No files to download.");
             return;
@@ -57,20 +58,19 @@ public class DownloadAPI {
      */
     private static void downloadFile(String fileUrl) {
         try {
-            URL url = new URL(fileUrl);
-            String fileName = new File(url.getPath()).getName();
+            String fileName = new File(fileUrl).getName();
             Path filePath = downloadDirectory.resolve(fileName);
 
             StatusAPI.updateLog("⬇️ Downloading: " + fileName);
 
-            try (InputStream in = url.openStream();
-                 OutputStream out = Files.newOutputStream(filePath)) {
+            try (InputStream in = new FileInputStream(filePath.toFile())) {
+                OutputStream out = Files.newOutputStream(filePath);
                 in.transferTo(out);
             }
 
             filesDownloaded++;
             int progress = (filesDownloaded * 100) / totalFiles;
-            StatusAPI.updateProgress(progress);
+            StatusAPI.updateLog(String.valueOf(progress));
 
             StatusAPI.updateLog("✅ Downloaded: " + fileName);
 
@@ -85,6 +85,7 @@ public class DownloadAPI {
      * @return The created directory path.
      * @throws IOException If an error occurs while creating the directory.
      */
+    @NotNull
     private static Path createDownloadDirectory() throws IOException {
         Path path = Paths.get("downloads", "session_" + System.currentTimeMillis());
         Files.createDirectories(path);
