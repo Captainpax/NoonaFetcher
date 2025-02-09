@@ -39,12 +39,15 @@
     </style>
 </head>
 <body>
-<h1>Web Downloader</h1>
-<input type="text" id="urlInput" placeholder="Enter URL">
-<input type="text" id="fileType" placeholder="File Type (e.g., .pdf)">
-<button onclick="startDownload()">Start Download</button>
-<button onclick="cancelDownload()">Cancel</button>
-<div id="log-container"></div>
+    <h1>Web Downloader</h1>
+
+    <label for="urlInput"></label><input type="text" id="urlInput" placeholder="Enter URL">
+    <label for="fileType"></label><input type="text" id="fileType" placeholder="File Type (e.g., .pdf)">
+
+    <button onclick="startDownload()">Start Download</button>
+    <button onclick="cancelDownload()">Cancel</button>
+
+    <div id="log-container"></div>
 <button id="downloadBtn" style="display: none;" onclick="downloadZip()">Download ZIP</button>
 
 <script>
@@ -54,6 +57,7 @@
     function logMessage(message) {
         let logEntry = document.createElement("div");
         logEntry.textContent = message;
+
         logContainer.appendChild(logEntry);
         logContainer.scrollTop = logContainer.scrollHeight; // Auto-scroll
     }

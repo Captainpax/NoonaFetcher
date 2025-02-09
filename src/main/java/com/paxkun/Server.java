@@ -19,11 +19,10 @@ public class Server {
         this.app = Javalin.create(config -> {
             // ✅ Set up static file serving
             config.staticFiles.add(staticFileConfig -> {
-                staticFileConfig.hostedPath = "/";
-                staticFileConfig.directory = "public";
+                staticFileConfig.directory = "/public";
                 staticFileConfig.location = Location.CLASSPATH;
             });
-        }).start(7000);
+        });
     }
 
     public void startServer() {
@@ -37,8 +36,10 @@ public class Server {
     }
 
     public void populate() {
+
+        // THIS IS NOT NEEDED - configs auto render static pages
         // ✅ Serve the main frontend page
-        app.get("/", ctx -> ctx.render("public/index.html"));
+        //app.get("/", ctx -> ctx.render("public/index.html"));
 
         // ✅ API routes (all under /api/)
         app.get("/api/health", ctx -> ctx.result("✅ WebAPI is running!"));
