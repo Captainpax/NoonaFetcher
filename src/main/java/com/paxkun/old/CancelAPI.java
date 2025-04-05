@@ -1,5 +1,6 @@
-package com.paxkun;
+package com.paxkun.old;
 
+import com.paxkun.Main;
 import lombok.Getter;
 
 public class CancelAPI {
@@ -12,9 +13,9 @@ public class CancelAPI {
         System.out.println("⛔ Download process has been canceled.");
 
         // Stop the server by accessing it from Main
-        if (Main.getServer() != null) {
-            Main.getServer().stopServer();
-        }
+//        if (Main.getServer() != null) {
+//            Main.getServer().stopServer();
+//        }
     }
 
     public static void resetCancelRequest() {

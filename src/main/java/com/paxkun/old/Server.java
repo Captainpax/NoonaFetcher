@@ -1,4 +1,4 @@
-package com.paxkun;
+package com.paxkun.old;
 
 import io.javalin.Javalin;
 import io.javalin.http.staticfiles.Location;

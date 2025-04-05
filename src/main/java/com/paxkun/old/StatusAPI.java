@@ -1,4 +1,4 @@
-package com.paxkun;
+package com.paxkun.old;
 
 import io.javalin.websocket.WsContext;
 import java.util.concurrent.atomic.AtomicBoolean;
