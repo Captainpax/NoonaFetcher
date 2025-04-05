@@ -9,18 +9,10 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.concurrent.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class Download {
-
-    private static final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
-    private static final BlockingQueue<String> statusQueue = new LinkedBlockingQueue<>();
-
-    public Download() {
-        startStatusMonitor();
-    }
 
     public static boolean urlExists(String urlStr) {
         try {
@@ -98,21 +90,5 @@ public class Download {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-
-
-    private static void startStatusMonitor() {
-        Thread.ofVirtual().start(() -> {
-            while (true) {
-                try {
-                    String status = statusQueue.take();
-                    System.out.println(status);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
-            }
-        });
     }
 }

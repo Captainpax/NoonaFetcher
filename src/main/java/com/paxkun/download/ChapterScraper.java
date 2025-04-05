@@ -13,7 +13,6 @@ import io.github.bonigarcia.wdm.WebDriverManager;
 import java.time.Duration;
 import java.util.*;
 import java.util.regex.*;
-import java.util.stream.*;
 
 public class ChapterScraper {
 
@@ -52,13 +51,6 @@ public class ChapterScraper {
                     chapters.put((int) chapterNumber, href); // Store chapter number and link
                 }
             }
-
-            // Reverse the order of the chapters map (descending order)
-            chapters = chapters.entrySet()
-                    .stream()
-                    .sorted((entry1, entry2) -> entry2.getKey().compareTo(entry1.getKey()))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1,
-                            LinkedHashMap::new));
 
         } finally {
             driver.quit(); // Always quit the driver at the end
