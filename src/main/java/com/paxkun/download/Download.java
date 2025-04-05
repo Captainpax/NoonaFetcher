@@ -2,18 +2,14 @@ package com.paxkun.download;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -24,17 +20,6 @@ public class Download {
 
     public Download() {
         startStatusMonitor();
-        //Synchronous
-
-        //Async
-//        imageUrls.forEach(url ->
-//                CompletableFuture.runAsync(() -> downloadImage(url), executor)
-//                        .thenRun(() -> statusQueue.add("Downloaded: " + url))
-//                        .exceptionally(ex -> {
-//                            statusQueue.add("Failed: " + url + " - " + ex.getMessage());
-//                            return null;
-//                        })
-//        );
     }
 
     public static boolean urlExists(String urlStr) {
