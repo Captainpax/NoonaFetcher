@@ -29,7 +29,7 @@ public class Download {
             connection.setConnectTimeout(3000);
             connection.setReadTimeout(3000);
             int responseCode = connection.getResponseCode();
-            System.out.println(responseCode);
+            //System.out.println(responseCode);
             return (200 <= responseCode && responseCode < 400);
         } catch (IOException e) {
             return false;
@@ -58,7 +58,7 @@ public class Download {
                                 zipOut.putNextEntry(entry);
                                 in.transferTo(zipOut);
                                 zipOut.closeEntry();
-                                System.out.println("Added: " + imageName);
+                                //System.out.println("Added: " + imageName);
                                 downloaded = true;
                             } catch (IOException e) {
                                 attempts++;
@@ -76,7 +76,7 @@ public class Download {
                                     zipOut.putNextEntry(entry);
                                     in.transferTo(zipOut);
                                     zipOut.closeEntry();
-                                    System.out.println("Added: " + imageName);
+                                    //System.out.println("Added: " + imageName);
                                     downloaded = true;
                                 } catch (IOException e) {
                                     attempts++;

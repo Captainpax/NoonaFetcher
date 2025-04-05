@@ -32,15 +32,12 @@ public class SourceFinder {
                 Matcher matcher = pattern.matcher(src);
                 if (matcher.find()) {
                     String fullUrl = matcher.group(1);
-                    System.out.println("Matched: " + fullUrl);
-
                     int index = fullUrl.indexOf("/manga/");
                     if (index != -1) {
                         return fullUrl.substring(0, index + 7);
                     }
                 }
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

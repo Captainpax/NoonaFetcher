@@ -1,10 +1,10 @@
 package com.paxkun;
 
+import com.paxkun.download.ChapterScraper;
 import com.paxkun.download.Download;
 import com.paxkun.download.MangaScraper;
 import com.paxkun.download.SourceFinder;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -13,14 +13,13 @@ public class Main {
 
     private static final int PAGE_LIMIT = 9999;
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         Map<String, String> data = MangaScraper.searchManga();
         if (data.isEmpty()) return;
         String href = data.get("href");
         String url = href.substring(0, href.lastIndexOf("/"));
         String manga = href.substring(href.lastIndexOf("/") + 1);
-        Map<Integer, String> chapters = MangaScraper.chapterLinks(url + "/rss");
-        //System.out.println(chapters);
+        Map<Integer, String> chapters = ChapterScraper.chapterLinks(url + "/full-chapter-list");
         Download download = new Download();
         chapters.forEach((k, v) -> {
             List<String> imageUrls = new ArrayList<>();

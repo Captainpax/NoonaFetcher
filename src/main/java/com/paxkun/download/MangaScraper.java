@@ -10,10 +10,7 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Scanner;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -86,11 +83,12 @@ public class MangaScraper {
     }
 
     @NotNull
+    @Deprecated
     public static Map<Integer, String> chapterLinks(String rss) throws IOException {
         Document doc = Jsoup.connect(rss).get();
 
         Elements items = doc.select("item");
-        Map<Integer, String> chapters = new HashMap<>();
+        Map<Integer, String> chapters = new LinkedHashMap<>();
 
         Pattern pattern = Pattern.compile("Chapter\\s+(\\d+(?:\\.\\d+)?)", Pattern.CASE_INSENSITIVE);
 
@@ -105,7 +103,15 @@ public class MangaScraper {
             }
         }
 
-        return chapters;
+        // Reverse the order of the map
+        Map<Integer, String> reversed = new LinkedHashMap<>();
+        List<Map.Entry<Integer, String>> entryList = new ArrayList<>(chapters.entrySet());
+        Collections.reverse(entryList);
+        for (Map.Entry<Integer, String> entry : entryList) {
+            reversed.put(entry.getKey(), entry.getValue());
+        }
+
+        return reversed;
     }
 }
 
