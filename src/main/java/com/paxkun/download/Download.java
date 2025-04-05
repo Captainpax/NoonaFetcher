@@ -36,22 +36,21 @@ public class Download {
         }
     }
 
-    public void downloadChapter(@NotNull List<String> imageUrls, String cbzFilename, String inputFolder) {
-        Path cbzPath = Path.of("downloads", cbzFilename);
-        Path inputPath = Path.of(inputFolder);  // Input folder for images
+    public void downloadChapter(@NotNull List<String> imageUrls, String cbzFilename, String outputFolder) {
+        Path outputDir = Path.of(outputFolder); // e.g., "outputFolder/MANGA"
+        Path cbzPath = outputDir.resolve(cbzFilename); // Final output: outputFolder/MANGA/file.cbz
+        Path inputPath = Path.of("/temp");  // Still using this as the source for local images
 
         try {
-            Files.createDirectories(cbzPath.getParent());
+            Files.createDirectories(cbzPath.getParent()); // Ensure output directory exists
 
             try (ZipOutputStream zipOut = new ZipOutputStream(Files.newOutputStream(cbzPath))) {
                 int index = 1;
                 for (String imageUrl : imageUrls) {
-                    boolean downloaded = false; // Track whether the image was successfully downloaded
+                    boolean downloaded = false;
                     int attempts = 0;
 
-                    // Retry downloading up to 3 times
                     while (attempts < 3 && !downloaded) {
-                        // Check if the URL is an actual URL (not a file path)
                         if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
                             try (InputStream in = new URL(imageUrl).openStream()) {
                                 String imageName = String.format("%03d.png", index++);
@@ -60,7 +59,7 @@ public class Download {
                                 in.transferTo(zipOut);
                                 zipOut.closeEntry();
                                 System.out.println("Added: " + imageName);
-                                downloaded = true; // Mark as downloaded
+                                downloaded = true;
                             } catch (IOException e) {
                                 attempts++;
                                 System.err.println("Failed to download: " + imageUrl + " (Attempt " + attempts + "/3)");
@@ -69,8 +68,7 @@ public class Download {
                                 }
                             }
                         } else {
-                            // For local images in the folder
-                            Path imagePath = inputPath.resolve(imageUrl);  // Resolve the image path
+                            Path imagePath = inputPath.resolve(imageUrl);
                             if (Files.exists(imagePath)) {
                                 try (InputStream in = Files.newInputStream(imagePath)) {
                                     String imageName = String.format("%03d.png", index++);
@@ -79,7 +77,7 @@ public class Download {
                                     in.transferTo(zipOut);
                                     zipOut.closeEntry();
                                     System.out.println("Added: " + imageName);
-                                    downloaded = true; // Mark as downloaded
+                                    downloaded = true;
                                 } catch (IOException e) {
                                     attempts++;
                                     System.err.println("Failed to read: " + imagePath + " (Attempt " + attempts + "/3)");
@@ -89,7 +87,7 @@ public class Download {
                                 }
                             } else {
                                 System.err.println("Image not found: " + imagePath);
-                                downloaded = true; // No need to retry if the image is not found
+                                downloaded = true;
                             }
                         }
                     }

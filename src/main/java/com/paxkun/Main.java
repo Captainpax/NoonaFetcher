@@ -2,47 +2,39 @@ package com.paxkun;
 
 import com.paxkun.download.Download;
 import com.paxkun.download.MangaScraper;
+import com.paxkun.download.SourceFinder;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class Main {
 
-    private static final List<String> SOURCES = List.of(
-            "https://hot.planeptune.us/manga/",
-            "https://scans-hot.planeptune.us/manga/",
-            "https://official.lowee.us/manga/"
-            //CLOUDFLARE PROTECTION
-            /*"https://scans.lastation.us/manga/"*/
-    );
-
-    //private static final String MANGA = "Absolute-Duo";
-    private static final int CHAPTER_LIMIT = 9999;
     private static final int PAGE_LIMIT = 9999;
 
-    public static void main(String[] args) {
-        String url = MangaScraper.searchManga();
-        String MANGA = url.substring(url.lastIndexOf("/", url.length() - 2) + 1);
+    public static void main(String[] args) throws IOException {
+        Map<String, String> data = MangaScraper.searchManga();
+        if (data.isEmpty()) return;
+        String href = data.get("href");
+        String url = href.substring(0, href.lastIndexOf("/"));
+        String manga = href.substring(href.lastIndexOf("/") + 1);
+        Map<Integer, String> chapters = MangaScraper.chapterLinks(url + "/rss");
+        //System.out.println(chapters);
         Download download = new Download();
-        outer:
-        for (int j = 20; j < CHAPTER_LIMIT; j++) {
+        chapters.forEach((k, v) -> {
             List<String> imageUrls = new ArrayList<>();
-            inner:
+            String SOURCE_URL = SourceFinder.findSource(v);
+            if (SOURCE_URL.isEmpty()) return;
             for (int i = 1; i < PAGE_LIMIT; i++) {
-                for (String source : SOURCES) {
-                    String s = source + MANGA + "/" + String.format("%04d", j) + "-" + String.format("%03d", i) + ".png";
-                    System.out.println(s);
-                    if (Download.urlExists(s)) {
-                        imageUrls.add(s);
-                        break;
-                    } else if (SOURCES.getLast().equalsIgnoreCase(source) && i == 1) {
-                        break outer;
-                    } else if (SOURCES.getLast().equalsIgnoreCase(source)) {
-                        break inner;
-                    }
+                String s = SOURCE_URL + manga + "/" + String.format("%04d", k) + "-" + String.format("%03d", i) + ".png";
+                if (Download.urlExists(s)) {
+                    imageUrls.add(s);
+                } else {
+                    break;
                 }
             }
-            download.downloadChapter(imageUrls, MANGA + "-" + String.format("%04d", j) + ".cbz", MANGA + "/");
-        }
+            download.downloadChapter(imageUrls, manga + "-" + String.format("%04d", k) + ".cbz", "downloads/" + data.get("title") + "/");
+        });
     }
 }

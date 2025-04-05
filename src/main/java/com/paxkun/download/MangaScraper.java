@@ -7,20 +7,32 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MangaScraper {
-
-    private static final WebDriver driver = new ChromeDriver();
 
     public static void main(String[] args) {
         //searchManga();
     }
 
     @NotNull
-    public static String searchManga() {
+    public static Map<String, String> searchManga() {
+
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("--headless=new"); // Use "--headless=new" for Chrome 109+
+        options.addArguments("--disable-gpu"); // Optional but recommended on Windows
+        options.addArguments("--no-sandbox");  // Useful for some Linux environments
+        options.addArguments("--disable-dev-shm-usage"); // Avoids memory issues
+        WebDriver driver = new ChromeDriver(options);
+
         Scanner scanner = new Scanner(System.in);
         System.out.print("Enter manga: ");
         String userManga = scanner.nextLine();
@@ -40,7 +52,7 @@ public class MangaScraper {
 
         if (mangaResults.isEmpty()) {
             System.out.println("Manga not found, please try a different search.");
-            return "";
+            return new HashMap<>();
         }
 
         // Display manga results
@@ -62,12 +74,38 @@ public class MangaScraper {
             String answer = scanner.nextLine();
 
             if ("Y".equalsIgnoreCase(answer)) {
-                return selectedManga.absUrl("href");
+                Map<String, String> data = new HashMap<>();
+                data.put("href", selectedManga.absUrl("href"));
+                data.put("title", selectedManga.text());
+                return data;
             }
         } else {
             System.out.println("Invalid index, please choose a correct one.");
         }
-        return "";
+        return new HashMap<>();
+    }
+
+    @NotNull
+    public static Map<Integer, String> chapterLinks(String rss) throws IOException {
+        Document doc = Jsoup.connect(rss).get();
+
+        Elements items = doc.select("item");
+        Map<Integer, String> chapters = new HashMap<>();
+
+        Pattern pattern = Pattern.compile("Chapter\\s+(\\d+(?:\\.\\d+)?)", Pattern.CASE_INSENSITIVE);
+
+        for (Element item : items) {
+            String title = Objects.requireNonNull(item.selectFirst("title")).text();
+            String link = Objects.requireNonNull(item.selectFirst("link")).text();
+
+            Matcher matcher = pattern.matcher(title);
+            if (matcher.find()) {
+                double chapterNumber = Double.parseDouble(matcher.group(1));
+                chapters.put((int) chapterNumber, link); // if you want to round down decimals
+            }
+        }
+
+        return chapters;
     }
 }
 
